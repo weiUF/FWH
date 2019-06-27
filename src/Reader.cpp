@@ -149,10 +149,8 @@ void Reader::read_face_area(hid_t fid)
 
 void Reader::read_data(hid_t fid)
 {
-	hid_t dataset_id, dataspace_id;
-	hsize_t dim[3];
-
-	cout << " -> Reading field variables on the surface file... " << flush;
+	hid_t dataset_id, dataspace_id, memspace_id;
+	hsize_t dim[3], offset[3], count[3];
 
 	dataset_id = H5Dopen2(fid, "data", H5P_DEFAULT);
 	if (dataset_id < 0)
@@ -166,16 +164,25 @@ void Reader::read_data(hid_t fid)
 		faces.tau(i) = i * faces.dt;
 
 	//initialize data array
-	faces.data.setup({(size_t)dim[2], (size_t)dim[1], (size_t)dim[0]});//time*face*field
-
+	faces.data.setup({(size_t)dim[1], (size_t)dim[0],(size_t)dim[2]});//face,field,time
+	count[0]=dim[0];offset[0]=0;
+	count[1]=dim[1];offset[1]=0;
+	count[2]=1;//time=1
+	memspace_id = H5Screate_simple(3, count, NULL);
 	//read data
-	H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, faces.data.get_ptr());
-
+	for (size_t i = 0; i < (size_t)dim[2]; i++)//for each time step
+	{
+		cout << " -> Reading field variables on the surface file... time step:" << i + 1 << "of" << dim[2] << "\r" << flush;
+		offset[2] = i;
+		if (H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, NULL, count, NULL) < 0)
+			Fatal_Error("Failed to get hyperslab");
+		H5Dread(dataset_id, H5T_NATIVE_DOUBLE, memspace_id, dataspace_id, H5P_DEFAULT, faces.data.get_ptr((size_t)dim[1] * (size_t)dim[0] * i));
+	}
+	cout << " -> Reading field variables on the surface file... done.        " << endl;
 	//close handles
 	H5Sclose(dataspace_id);
+	H5Sclose(memspace_id);
 	H5Dclose(dataset_id);
-
-	cout << "Done." << endl;
 }
 
 void Reader::read_input()
@@ -189,6 +196,7 @@ void Reader::read_input()
 	pr.getScalarValue("T_static", input.T_static, 300.);
 	pr.getScalarValue("gamma", input.gamma, 1.4);
 	pr.getScalarValue("R_gas", input.R_gas, 286.9);
+	pr.getScalarValue("p_static",input.p_static,101325.);
 	pr.getScalarValue("fwh_surf_fname", input.fwh_surf_fname);
 	pr.getScalarValue("output_fname", input.output_fname);
 	//read observer positions
@@ -199,8 +207,18 @@ void Reader::read_input()
 
 	if (microphone.y.get_len() != microphone.n_oberver || microphone.z.get_len() != microphone.n_oberver)
 		Fatal_Error("Number of observers not agree in each dimension");
+
+	//endcap averaging
+	pr.getScalarValue("endcap_avg", input.endcap_avg);
+	if (input.endcap_avg)
+	{
+		pr.getVectorValue("endcap_x", input.endcap_x);
+		input.n_endcaps = input.endcap_x.get_len();
+	}
 	pr.closeFile();
 	cout << "Done.\n";
+	if (input.endcap_avg)
+		cout << "Number of endcaps: " << input.n_endcaps << endl;
 }
 
 Reader::~Reader()
