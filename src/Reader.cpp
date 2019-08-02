@@ -21,7 +21,7 @@ void Reader::read()
 	else if(input.fwh_surf_fname.compare(input.fwh_surf_fname.size()-4,4,"cgns") == 0)
 		Reader::readCGNS();
 	else
-		Fatal_Error("input file name not supported. h5 and cgns are currently supported.");
+		Fatal_Error("input file name is not supported. h5 and cgns are currently supported.");
 }
 
 void Reader::readh5()
