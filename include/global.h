@@ -13,15 +13,18 @@
 
 #include "ndarray.h"
 
-#define VERSION 0.5
+#define VERSION 1.0
 
 struct Params
 {
-	double T_static;
+	double T_static,p_static;
 	double gamma;
 	double R_gas;
 	string fwh_surf_fname;
 	string output_fname;
+	int endcap_avg;
+	size_t n_endcaps;
+	ndarray<double> endcap_x;
 };
 
 struct FWH_surf
