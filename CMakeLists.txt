@@ -21,6 +21,12 @@ include_directories(${HDF5_INCLUDE})
 set(CXX_LD ${CXX_LD} ${HDF5_LD})
 set(CXX_LIB ${CXX_LIB} hdf5)
 
+#CGNS library
+set(CGNS_INCLUDE "/opt" CACHE PATH "path to cgns include")
+set(CGNS_LD "/opt" CACHE PATH "path to cgns library")
+include_directories(${CGNS_INCLUDE})
+set(CXX_LD ${CXX_LD} ${CGNS_LD})
+set(CXX_LIB ${CXX_LIB} cgns)
 
 #source file list
 aux_source_directory(${PROJECT_SOURCE_DIR}/src SRCLIST)
